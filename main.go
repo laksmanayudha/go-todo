@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 type Todo struct {
@@ -105,6 +107,65 @@ func ValidateId(todos TodoList, id int) error {
 	return nil
 }
 
+func getTodoFile() (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	var todoPath string = filepath.Join(currentDir, "storage", "todos.json")
+	_, err = os.Stat(todoPath)
+
+	if err == nil{
+		return todoPath, nil
+	}
+
+	f, err := os.Create(todoPath)
+	if err != nil {
+		return "", err
+	}
+
+	defer f.Close()
+
+	_, err = f.WriteString("[]")
+	if err != nil {
+		return "", err
+	}
+
+	f.Sync()
+
+	return todoPath, nil
+}
+
+func LoadTodoList() (TodoList, error) {
+	todoPath, err := getTodoFile()
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	strTodo, err := os.ReadFile(todoPath)
+	if err != nil {
+		return TodoList{}, err
+	}
+
+	todos := TodoList{}
+	json.Unmarshal(strTodo, &todos)
+
+	return todos, nil
+}
+
+func SaveTodoList(todos TodoList) error {
+	todoPath, err := getTodoFile()
+	if err != nil {
+		return err
+	}
+
+	byteTodos, err := json.Marshal(todos)
+	err = os.WriteFile(todoPath, byteTodos, 0777)
+
+	return err
+}
+
 func main() {
 	// check len of arguments
 	var arguments []string = os.Args
@@ -113,10 +174,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	var todoList TodoList = TodoList{
-		Todo{Title: "Learning Golang"},
-		Todo{Title: "Create POS Application"},
-		Todo{Title: "Update Todo CLI Program"},
+	todoList, err := LoadTodoList()
+	if (err != nil) {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	var command string = arguments[1]
@@ -134,6 +195,7 @@ func main() {
 		}
 
 		ShowTodos(todoList)
+		SaveTodoList(todoList)
 	case "list":
 		ShowTodos(todoList)
 	case "done":
@@ -149,6 +211,7 @@ func main() {
 		}
 
 		ShowTodos(todoList)
+		SaveTodoList(todoList)
 	case "delete":
 		var DeleteCommand *flag.FlagSet = flag.NewFlagSet("delete", flag.ExitOnError)
 		var todoId *int = DeleteCommand.Int("id", 0, "todo id")
@@ -162,6 +225,7 @@ func main() {
 		}
 
 		ShowTodos(todoList)
+		SaveTodoList(todoList)
 	default:
 		fmt.Println("Unknown command. Please provide a valid command. See available command using --help flag")
 	}
