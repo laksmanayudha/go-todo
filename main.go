@@ -116,7 +116,7 @@ func getTodoFile() (string, error) {
 	var todoPath string = filepath.Join(currentDir, "storage", "todos.json")
 	_, err = os.Stat(todoPath)
 
-	if err == nil{
+	if err == nil {
 		return todoPath, nil
 	}
 
