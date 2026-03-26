@@ -52,13 +52,7 @@ func (todolist *Todolist) FindById(id int) (t *Todo, err error) {
 		return t, err
 	}
 
-	for index, todo := range todolist.Data {
-		if index == id {
-			return &todo, nil
-		}
-	}
-
-	return t, errors.New("Todo not found")
+	return &todolist.Data[id], err
 }
 
 func (todolist *Todolist) DeleteById(id int) error {
@@ -75,12 +69,7 @@ func (todolist *Todolist) UpdateById(id int, newTodo Todo) error {
 		return err
 	}
 
-	for index := range todolist.Data {
-		if index == id {
-			todolist.Data[index] = newTodo
-			break
-		}
-	}
+	todolist.Data[id] = newTodo
 
 	return nil
 }
